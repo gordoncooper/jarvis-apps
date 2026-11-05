@@ -10,11 +10,14 @@ on:
       - main
 
 env:
-  # The jarvis commit whose tools/app-check this repository is held to
-  # (platform/app-hosting/CONTRACT.md there). Bump it on purpose, in its own PR.
+  # The jarvis commit whose tools/app-check, admission policies and example copies this
+  # repository is held to (platform/app-hosting/CONTRACT.md there). Bump it on purpose, in
+  # its own PR, to a commit SHA, never a branch name.
   JARVIS_REPOSITORY: gordoncooper/jarvis
-  JARVIS_REF: 28682347a010370140e25bcc0a3eb1ebb091dc1f
+  JARVIS_REF: 4148e01484a901f80d5e675876d4f37056eb6eca
   PYYAML_VERSION: "6.0.3"
+  # The pytest jarvis pins (requirements-dev.txt there).
+  PYTEST_VERSION: "9.2.0"
 
 jobs:
   ci:
@@ -34,12 +37,27 @@ jobs:
           path: .jarvis
           persist-credentials: false
 
-      - name: Install PyYAML
+      - name: Install PyYAML and pytest
         run: |
           python3 -m venv .venv
-          .venv/bin/pip install "PyYAML==${PYYAML_VERSION}"
+          .venv/bin/pip install "PyYAML==${PYYAML_VERSION}" "pytest==${PYTEST_VERSION}"
+
+      # The pinned jarvis checkout's own installer, which checks each download's sha256,
+      # puts the kyverno CLI (among its other pinned tools) in ~/.local/bin.
+      - name: Install the kyverno CLI
+        run: python3 .jarvis/tools/install-deps
 
       - name: App-file check over every app folder
         run: |
           export PATH="${PWD}/.venv/bin:${PATH}"
           bash ci/check-apps .jarvis
+
+      - name: Examples equal their copies in jarvis
+        run: |
+          export PATH="${PWD}/.venv/bin:${PATH}"
+          python3 -m pytest -ra ci/test_examples.py -k copy
+
+      - name: Example proof against jarvis's renderer, env-schema and admission
+        run: |
+          export PATH="${PWD}/.venv/bin:${HOME}/.local/bin:${PATH}"
+          python3 -m pytest -ra ci/test_examples.py -k "not copy"
