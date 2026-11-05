@@ -2,7 +2,8 @@
 
     pytest ci/test_examples.py
 
-Reads the checkout at .jarvis (where CI puts it) or $JARVIS_CHECKOUT. The admission cases
+Not run in CI (CI runs ci/check-apps only). Reads the Jarvis checkout at .jarvis, the same
+path ci/check-apps uses in CI, or $JARVIS_CHECKOUT. The admission cases
 need the kyverno CLI on PATH (jarvis: make deps); without it they fail, not skip.
 
 For an env that lists the three apps (env-00, copied):

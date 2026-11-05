@@ -18,6 +18,7 @@ if [[ ! -f "${checker}" ]]; then
 fi
 
 cd "$(dirname "$0")/.."
+shopt -s nullglob
 folders=()
 for dir in */; do
   name="${dir%/}"
