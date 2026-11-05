@@ -5,6 +5,16 @@ permissions:
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  # The jarvis commit whose tools/app-check this repository is held to
+  # (platform/app-hosting/CONTRACT.md there). Bump it on purpose, in its own PR.
+  JARVIS_REPOSITORY: gordoncooper/jarvis
+  JARVIS_REF: 28682347a010370140e25bcc0a3eb1ebb091dc1f
+  PYYAML_VERSION: "6.0.3"
 
 jobs:
   ci:
@@ -13,5 +23,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: ci
-        run: echo "ci ok"
+        with:
+          persist-credentials: false
+
+      - name: Checkout jarvis at the pinned ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.JARVIS_REPOSITORY }}
+          ref: ${{ env.JARVIS_REF }}
+          path: .jarvis
+          persist-credentials: false
+
+      - name: Install PyYAML
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install "PyYAML==${PYYAML_VERSION}"
+
+      - name: App-file check over every app folder
+        run: |
+          export PATH="${PWD}/.venv/bin:${PATH}"
+          bash ci/check-apps .jarvis

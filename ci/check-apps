@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Run jarvis's app-file check over every app folder in this repository.
+#
+#   ci/check-apps <jarvis checkout>
+#
+# An app folder is every top-level folder except hidden ones and the repository's own
+# tooling (listed in NOT_APPS). Each must hold <name>/app.yaml; tools/app-check reports a
+# folder without one ("missing app.yaml") along with every other rule a folder breaks.
+set -euo pipefail
+
+NOT_APPS=(ci)
+
+jarvis="${1:?usage: ci/check-apps <jarvis checkout>}"
+checker="${jarvis}/tools/app-check"
+if [[ ! -f "${checker}" ]]; then
+  echo "check-apps: ${checker} not found; pass a jarvis checkout" >&2
+  exit 2
+fi
+
+cd "$(dirname "$0")/.."
+folders=()
+for dir in */; do
+  name="${dir%/}"
+  skip=false
+  for other in "${NOT_APPS[@]}"; do
+    [[ "${name}" == "${other}" ]] && skip=true
+  done
+  "${skip}" || folders+=("${name}")
+done
+
+if [[ ${#folders[@]} -eq 0 ]]; then
+  echo "check-apps: no app folders"
+  exit 0
+fi
+
+echo "check-apps: ${folders[*]}"
+python3 "${checker}" "${folders[@]}"
