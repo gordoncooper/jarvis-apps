@@ -1,16 +1,19 @@
-"""Local proof for the example apps, run against a jarvis checkout with jarvis's own tools.
+"""Proof for the example apps, run against a jarvis checkout with jarvis's own tools.
 
     pytest ci/test_examples.py
 
-Not run in CI (CI runs ci/check-apps only). Reads the Jarvis checkout at .jarvis, the same
-path ci/check-apps uses in CI, or $JARVIS_CHECKOUT. The admission cases
-need the kyverno CLI on PATH (jarvis: make deps); without it they fail, not skip.
+CI runs it against the jarvis commit pinned in .github/workflows/ci.yml. Reads the Jarvis
+checkout at .jarvis, the same path ci/check-apps uses, or $JARVIS_CHECKOUT. The admission
+cases need the kyverno CLI on PATH (jarvis: tools/install-deps); without it they fail, not skip.
 
-For an env that lists the three apps (env-00, copied):
+- each example folder equals its copy in jarvis (ci/tests/fixtures/app-hosting/jarvis-apps/),
+  which jarvis's own tests run;
+
+for an env that lists the three apps (env-00, copied):
 - tools/app-check passes each folder;
 - tools/lib/render_apps.py renders their wiring, and env-schema passes the render;
 - each app's deploy/ objects pass jarvis's admission policies with the env's grants;
-- lan-demo's home-network Service is refused without the env's exception line.
+- lan-demo's LAN Service is refused without the env's exception line.
 """
 
 from __future__ import annotations
@@ -26,6 +29,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 JARVIS = Path(os.environ.get("JARVIS_CHECKOUT", ROOT / ".jarvis")).resolve()
 if not (JARVIS / "tools" / "app-check").is_file():
+    # In CI a missing checkout fails, so the copy check cannot pass by skipping.
+    if os.environ.get("CI"):
+        raise RuntimeError(f"no jarvis checkout at {JARVIS}")
     pytest.skip(f"no jarvis checkout at {JARVIS}", allow_module_level=True)
 for _entry in (JARVIS / "ci" / "tests", JARVIS / "ci" / "checks" / "lib", JARVIS / "tools" / "lib", JARVIS):
     if str(_entry) not in sys.path:
@@ -39,6 +45,31 @@ import test_app_admission as admission  # noqa: E402
 
 APPS = ["hello-web", "notes", "lan-demo"]
 LAN_LINE = {"lan-demo": "lan-port 8080/TCP"}
+COPIES = JARVIS / "ci" / "tests" / "fixtures" / "app-hosting" / "jarvis-apps"
+
+
+def _differences(ours: Path, theirs: Path) -> list[str]:
+    """Files that differ between two folders, by path: missing on either side or not byte-equal."""
+    def files(folder: Path) -> dict[str, bytes]:
+        return {path.relative_to(folder).as_posix(): path.read_bytes() for path in folder.rglob("*") if path.is_file()}
+
+    left, right = files(ours), files(theirs)
+    return sorted(name for name in left.keys() | right.keys() if left.get(name) != right.get(name))
+
+
+@pytest.mark.parametrize("app", APPS)
+def test_example_equals_its_copy_in_jarvis(app: str) -> None:
+    """Rule: jarvis tests copies of the examples, so each folder here equals its copy at the pinned jarvis commit."""
+    differ = _differences(ROOT / app, COPIES / app)
+    assert not differ, f"{app}/ differs from jarvis's ci/tests/fixtures/app-hosting/jarvis-apps/{app}/ in: {', '.join(differ)}"
+
+
+def test_copy_check_fails_on_a_changed_file(tmp_path: Path) -> None:
+    """Rule: the copy check catches an example that drifted from its jarvis copy."""
+    drifted = tmp_path / "hello-web"
+    shutil.copytree(ROOT / "hello-web", drifted)
+    (drifted / "app.yaml").write_text((drifted / "app.yaml").read_text(encoding="utf-8") + "# edited\n", encoding="utf-8")
+    assert _differences(drifted, COPIES / "hello-web") == ["app.yaml"]
 
 
 def _env(tmp_path: Path, exceptions: list[dict]) -> tuple[Path, Path, dict]:
