@@ -14,7 +14,7 @@ env:
   # repository is held to (platform/app-hosting/CONTRACT.md there). Bump it on purpose, in
   # its own PR, to a commit SHA, never a branch name.
   JARVIS_REPOSITORY: gordoncooper/jarvis
-  JARVIS_REF: d01738b9f051c7fa07796f77d43385283a6bca5e
+  JARVIS_REF: 20e2157ff8efb5d82469d71e1a44d8cbf9cb5799
   PYYAML_VERSION: "6.0.3"
   # The pytest jarvis pins (requirements-dev.txt there).
   PYTEST_VERSION: "9.2.0"
