@@ -29,6 +29,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 JARVIS = Path(os.environ.get("JARVIS_CHECKOUT", ROOT / ".jarvis")).resolve()
 if not (JARVIS / "tools" / "app-check").is_file():
+    # In CI a missing checkout fails, so the copy check cannot pass by skipping.
+    if os.environ.get("CI"):
+        raise RuntimeError(f"no jarvis checkout at {JARVIS}")
     pytest.skip(f"no jarvis checkout at {JARVIS}", allow_module_level=True)
 for _entry in (JARVIS / "ci" / "tests", JARVIS / "ci" / "checks" / "lib", JARVIS / "tools" / "lib", JARVIS):
     if str(_entry) not in sys.path:
