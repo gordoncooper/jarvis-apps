@@ -1,3 +1,3 @@
 # jarvis-apps
 
-Outside apps deployed to the JARVIS cluster (AlphaCut).
+Outside apps deployed to a Jarvis cluster.
