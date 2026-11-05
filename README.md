@@ -40,9 +40,11 @@ ci/               # this repository's own checks (not an app)
 
 | App | What it proves |
 | --- | --- |
-| [hello-web](hello-web/) | A static web app on plain defaults: no volumes, no internet, nothing risky. |
-| [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential. |
-| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's exception line and admitted with it. |
+| [hello-web](hello-web/) | A web app with an init container and ConfigMap config. It calls [notes](notes/) (granted, `egress.apps` + `callers`), is refused calling lan-demo, and has internet egress. No exception line. |
+| [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential, seeded by an init container, surviving restarts. Callable by hello-web only. No exception line. |
+| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's exception line (`lan-demo: lan-port 8080/TCP`) and admitted with it. |
+
+All three run restricted: non-root, capabilities dropped, read-only root filesystem, `hosted-app` priority, probes, and memory request equal to limit.
 
 Copy one of these to start a new app.
 
