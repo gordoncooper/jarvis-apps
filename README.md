@@ -16,7 +16,7 @@ ci/               # this repository's own checks (not an app)
 
 - The folder name is the app's name: a lowercase DNS label of at most 59 characters. It must match `metadata.name` in `app.yaml`.
 - The app's namespace is `app-<name>` and its address is `https://<name>.apps.<dns suffix>`. The Ingress host is always `${app_host}`, which the cluster fills in.
-- Defaults: 500m CPU and 512Mi memory for the whole app, nothing risky, and a closed network: no web address without `network.web`, no home-network port, no egress beyond DNS (no internet, no LAN, no other app), and no other app may call it.
+- Defaults: 500m CPU and 512Mi memory for the whole app, nothing risky, and a closed network: no web address without `network.web`, no LAN port, no egress beyond DNS (no internet, no LAN, no other app), and no other app may call it.
 - The network section of `app.yaml`:
 
   ```yaml
@@ -24,7 +24,7 @@ ci/               # this repository's own checks (not an app)
     web:                  # absent = no web address
       port: 8080          # plain-HTTP container port; served at https://<name>.apps.<dns suffix>
       healthPath: /       # optional, default /; the uptime check counts any answer but a 5xx
-    ports:                # home-network ports; each needs the env's lan-port line
+    ports:                # LAN ports; each needs the env's lan-port line
       - listen: 25565
         target: 25565
         protocol: TCP     # or UDP
@@ -42,7 +42,7 @@ ci/               # this repository's own checks (not an app)
 | --- | --- |
 | [hello-web](hello-web/) | A static web app on plain defaults: no volumes, no internet, nothing risky. |
 | [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential. |
-| [lan-demo](lan-demo/) | One risky item, a port open to the home network, and no web address. It is refused without the env's exception line and admitted with it. |
+| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's exception line and admitted with it. |
 
 Copy one of these to start a new app.
 
@@ -63,7 +63,7 @@ Not here. An env runs an app only when **both** of these are true, and both live
 
 The env then re-renders its app wiring with Jarvis's `tools/lib/render_apps.py` and commits the result.
 
-If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a home-network port or a LAN target), it also needs a matching exception line in that same env file. The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
+If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a LAN port or a LAN target), it also needs a matching exception line in that same env file. The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
 
 After you merge here, the change reaches every env that lists the app. No env edit is needed.
 

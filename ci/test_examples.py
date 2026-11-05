@@ -13,7 +13,7 @@ for an env that lists the three apps (env-00, copied):
 - tools/app-check passes each folder;
 - tools/lib/render_apps.py renders their wiring, and env-schema passes the render;
 - each app's deploy/ objects pass jarvis's admission policies with the env's grants;
-- lan-demo's home-network Service is refused without the env's exception line.
+- lan-demo's LAN Service is refused without the env's exception line.
 """
 
 from __future__ import annotations
