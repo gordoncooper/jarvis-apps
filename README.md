@@ -2,7 +2,7 @@
 
 Hosted apps for a Jarvis cluster: one folder per app. Everything here is **untrusted**. A Jarvis env decides which of these apps it runs and what each may do, and the cluster holds every app to that. Nothing in this repository can switch an app on, grant it anything, or reach the cluster's core.
 
-The rules an app follows are in Jarvis's `platform/app-hosting/CONTRACT.md`, and the walkthrough is `docs/add-a-hosted-app.md`. This README is the short version.
+The rules an app follows are in Jarvis's `platform/optional/app-hosting/CONTRACT.md`, and the walkthrough is `docs/add-a-hosted-app.md`. This README is the short version.
 
 ## Layout
 

@@ -11,7 +11,7 @@ on:
 
 env:
   # The jarvis commit whose tools/app-check, admission policies and example copies this
-  # repository is held to (platform/app-hosting/CONTRACT.md there). Bump it on purpose, in
+  # repository is held to (platform/optional/app-hosting/CONTRACT.md there). Bump it on purpose, in
   # its own PR, to a commit SHA, never a branch name.
   JARVIS_REPOSITORY: gordoncooper/jarvis
   JARVIS_REF: dc0732b3012218b483dbcf70285cf5c44b059929
