@@ -53,19 +53,24 @@ Copy one of these to start a new app.
 Not here. An env runs an app only when **both** of these are true, and both live in the env's own repository:
 
 1. **App hosting is on for the env.** It is an optional Jarvis component and off by default.
-2. **The env lists the app by name** in `envs/<env>/values/apps.yaml`, the file that also holds any exception lines:
+2. **The env lists the app by name** in `envs/<env>/values/switches.yaml`, one line per app:
 
    ```yaml
    apps:
      - hello-web
      - lan-demo
-   exceptions:
-     - lan-demo: lan-port 8080/TCP
    ```
 
-The env then re-renders its app wiring with Jarvis's `tools/lib/render_apps.py` and commits the result.
+The env then renders its wiring with Jarvis's `tools/lib/render_switches.py` and commits the result. Listing a name switches an app on and grants it nothing.
 
-If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a LAN port or a LAN target), it also needs a matching exception line in that same env file. The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
+If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a LAN port or a LAN target), it also needs a matching exception line in the env's `values/apps.yaml`:
+
+```yaml
+exceptions:
+  - lan-demo: lan-port 8080/TCP
+```
+
+The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
 
 After you merge here, the change reaches every env that lists the app. No env edit is needed.
 

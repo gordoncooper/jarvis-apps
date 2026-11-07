@@ -38,6 +38,7 @@ for _entry in (JARVIS / "ci" / "tests", JARVIS / "ci" / "checks" / "lib", JARVIS
         sys.path.insert(0, str(_entry))
 
 import _apps  # noqa: E402
+import _switches  # noqa: E402
 from _app_file import check_folder  # noqa: E402
 from render_apps import render_env  # noqa: E402
 from schema import env as env_schema  # noqa: E402
@@ -80,7 +81,10 @@ def _env(tmp_path: Path, exceptions: list[dict]) -> tuple[Path, Path, dict]:
     shutil.copytree(JARVIS / "envs" / "env-00", env_dir)
     (instance / "core").symlink_to(JARVIS)
     values = {"apps": APPS, "exceptions": exceptions}
-    (env_dir / _apps.APPS_VALUES).write_text(yaml.safe_dump(values), encoding="utf-8")
+    (env_dir / _apps.APPS_VALUES).write_text(yaml.safe_dump({"exceptions": exceptions}), encoding="utf-8")
+    switches = env_dir / _switches.SWITCHES_FILE
+    names = yaml.safe_load(switches.read_text(encoding="utf-8"))
+    switches.write_text(yaml.safe_dump({**names, "apps": APPS}), encoding="utf-8")
     text = render_env(env_dir)
     assert text is not None
     (env_dir / "flux" / _apps.GENERATED_REL).write_text(text, encoding="utf-8")
