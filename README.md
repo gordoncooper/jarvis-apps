@@ -10,6 +10,7 @@ The rules an app follows are in Jarvis's `platform/optional/app-hosting/CONTRACT
 <name>/
   app.yaml        # the app file: the whole definition of the app (kind App)
   deploy/         # the app's Kubernetes objects: plain manifests, or a kustomization
+  VERSION         # <major>.<minor>.<patch>; main tags each new one <name>/v<VERSION>
   README.md       # optional; nothing outside app.yaml and deploy/ reaches the cluster
 ci/               # this repository's own checks (not an app)
 ```
@@ -35,6 +36,10 @@ ci/               # this repository's own checks (not an app)
     callers: [web-ui]     # apps that may call this one
   ```
 - The image and the probes are the app's own concern; the cluster does not check them. This repository's convention is to pin images by digest (`image: <repo>@sha256:...`) and to put probes in the app's own `deploy/` manifests.
+
+## Versions
+
+An env runs an app at a tag, never at `main`: it pins `<name>: v<version>` under `versions` in its `values/apps.yaml`, and Flux reads `refs/tags/<name>/v<version>`. Each app's `VERSION` is its version. When a change to an app reaches `main`, `.github/workflows/tag-apps.yml` tags `<name>/v<VERSION>` if that tag is new; Renovate in the env repository then offers the bump. A change to an app whose `VERSION` is already tagged fails CI (`ci/check-versions`): bump `VERSION` in the same PR, so a tag never moves under an env that pins it.
 
 ## Examples
 
@@ -88,7 +93,7 @@ After you merge here, the change reaches every env that lists the app. No env ed
 3. Open a PR. CI runs `ci/check-apps` against the Jarvis commit pinned in `.github/workflows/ci.yml`. It fails if any app file is invalid, or if any top-level folder (other than `ci/`) has no `app.yaml`.
 4. Ask the env's owner to list the app, and to add any exception line or backup credential it needs.
 
-CI also runs `ci/test_examples.py` for the three examples, against the same pinned Jarvis commit. It fails when an example folder differs from Jarvis's copy of it (`ci/tests/fixtures/app-hosting/jarvis-apps/` there, which Jarvis's own tests run), so change an example together with that copy in Jarvis and move `JARVIS_REF` to the Jarvis commit holding it. It also renders the examples' wiring with Jarvis's renderer, runs env-schema, and runs Jarvis's admission policies through the `kyverno` CLI. Locally: `pytest ci/test_examples.py` (needs PyYAML, pytest and kyverno; Jarvis's `tools/install-deps` installs kyverno).
+CI also runs `ci/test_examples.py` for the three examples, against the same pinned Jarvis commit: it renders the examples' wiring with Jarvis's renderer, runs env-schema, and runs Jarvis's admission policies through the `kyverno` CLI. This repository owns the examples; Jarvis's own tests use their own minimal fixtures. Locally: `pytest ci/test_examples.py` (needs PyYAML, pytest and kyverno; Jarvis's `tools/install-deps` installs kyverno).
 
 ## License
 
