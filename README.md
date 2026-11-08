@@ -77,23 +77,21 @@ exceptions:
 
 The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
 
-After you merge here, the change reaches every env that lists the app. No env edit is needed.
+After you merge here, an env that lists the app keeps running its pinned tag. The change reaches it when the env moves the pin ([Versions](#versions)).
 
 ## Add an app
 
 1. Make `<name>/` with `app.yaml` and `deploy/`. Start from the example closest to what you need.
-2. Run the same check CI runs, against a Jarvis checkout. For identical results, check out the `JARVIS_REF` from `.github/workflows/ci.yml`:
+2. Run the same check CI runs, from a Jarvis checkout at the release `.github/workflows/ci.yml` uses (the `app-check` Action's ref):
 
    ```sh
    git clone https://github.com/gordoncooper/jarvis.git .jarvis
-   git -C .jarvis checkout <JARVIS_REF>
-   ci/check-apps .jarvis
+   git -C .jarvis checkout <ref>
+   python3 .jarvis/tools/app-check --repo . --exclude ci
    ```
 
-3. Open a PR. CI runs `ci/check-apps` against the Jarvis commit pinned in `.github/workflows/ci.yml`. It fails if any app file is invalid, or if any top-level folder (other than `ci/`) has no `app.yaml`.
-4. Ask the env's owner to list the app, and to add any exception line or backup credential it needs.
-
-CI also runs `ci/test_examples.py` for the three examples, against the same pinned Jarvis commit: it renders the examples' wiring with Jarvis's renderer, runs env-schema, and runs Jarvis's admission policies through the `kyverno` CLI. This repository owns the examples; Jarvis's own tests use their own minimal fixtures. Locally: `pytest ci/test_examples.py` (needs PyYAML, pytest and kyverno; Jarvis's `tools/install-deps` installs kyverno).
+3. Open a PR. CI runs Jarvis's `app-check` Action at that release over every top-level folder but `ci/`. It fails if any app file is invalid, or if any such folder has no `app.yaml`. Set the new app's `VERSION` (start at `0.1.0`).
+4. Ask the env's owner to list the app and pin it, and to add any exception line or backup credential it needs.
 
 ## License
 

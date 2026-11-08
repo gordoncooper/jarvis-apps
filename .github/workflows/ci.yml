@@ -10,11 +10,6 @@ on:
       - main
 
 env:
-  # The jarvis commit whose tools/app-check, admission policies and example copies this
-  # repository is held to (platform/optional/app-hosting/CONTRACT.md there). Bump it on purpose, in
-  # its own PR, to a commit SHA, never a branch name.
-  JARVIS_REPOSITORY: gordoncooper/jarvis
-  JARVIS_REF: dc0732b3012218b483dbcf70285cf5c44b059929
   PYYAML_VERSION: "6.0.3"
   # The pytest jarvis pins (requirements-dev.txt there).
   PYTEST_VERSION: "9.2.0"
@@ -31,28 +26,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Checkout jarvis at the pinned ref
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ env.JARVIS_REPOSITORY }}
-          ref: ${{ env.JARVIS_REF }}
-          path: .jarvis
-          persist-credentials: false
-
-      - name: Install PyYAML and pytest
-        run: |
-          python3 -m venv .venv
-          .venv/bin/pip install "PyYAML==${PYYAML_VERSION}" "pytest==${PYTEST_VERSION}"
-
-      # The pinned jarvis checkout's own installer, which checks each download's sha256,
-      # puts the kyverno CLI (among its other pinned tools) in ~/.local/bin.
-      - name: Install the kyverno CLI
-        run: python3 .jarvis/tools/install-deps
-
+      # Every top-level folder but ci/ against the app rules of the pinned jarvis release
+      # (platform/optional/app-hosting/CONTRACT.md there). Renovate offers each new release.
       - name: App-file check over every app folder
-        run: |
-          export PATH="${PWD}/.venv/bin:${PATH}"
-          bash ci/check-apps .jarvis
+        uses: gordoncooper/jarvis/.github/actions/app-check@1d8997906bd236c61fd1f34a908939fbe3f6aa9d
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
@@ -64,7 +41,8 @@ jobs:
             python3 ci/check-versions
           fi
 
-      - name: Example proof against jarvis's renderer, env-schema and admission
+      - name: This repository's own tests
         run: |
-          export PATH="${PWD}/.venv/bin:${HOME}/.local/bin:${PATH}"
-          python3 -m pytest -ra ci/test_examples.py
+          python3 -m venv .venv
+          .venv/bin/pip install -q "PyYAML==${PYYAML_VERSION}" "pytest==${PYTEST_VERSION}"
+          .venv/bin/pytest -ra ci

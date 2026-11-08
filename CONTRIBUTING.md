@@ -15,8 +15,9 @@ Changes come as pull requests against `main`. The repository owner reviews and m
 Run this repository's checks, as CI does:
 
 ```bash
-ci/check-apps <jarvis checkout>
-pytest ci/test_examples.py   # needs PyYAML, pytest and kyverno
+python3 <jarvis checkout>/tools/app-check --repo . --exclude ci   # needs PyYAML
+python3 ci/check-versions origin/main
+pytest ci
 ```
 
 Then fill in the pull request description: which app, what changed, and what it asks for.
