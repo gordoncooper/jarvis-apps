@@ -29,7 +29,7 @@ jobs:
       # Every top-level folder but ci/ against the app rules of the pinned jarvis release
       # (platform/optional/app-hosting/CONTRACT.md there). Renovate offers each new release.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@1d8997906bd236c61fd1f34a908939fbe3f6aa9d
+        uses: gordoncooper/jarvis/.github/actions/app-check@c5e5173a9ca895879119af2195e19378c01e6a89 # v0.3.0
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
