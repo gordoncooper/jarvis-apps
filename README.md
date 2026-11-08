@@ -89,3 +89,7 @@ After you merge here, the change reaches every env that lists the app. No env ed
 4. Ask the env's owner to list the app, and to add any exception line or backup credential it needs.
 
 CI also runs `ci/test_examples.py` for the three examples, against the same pinned Jarvis commit. It fails when an example folder differs from Jarvis's copy of it (`ci/tests/fixtures/app-hosting/jarvis-apps/` there, which Jarvis's own tests run), so change an example together with that copy in Jarvis and move `JARVIS_REF` to the Jarvis commit holding it. It also renders the examples' wiring with Jarvis's renderer, runs env-schema, and runs Jarvis's admission policies through the `kyverno` CLI. Locally: `pytest ci/test_examples.py` (needs PyYAML, pytest and kyverno; Jarvis's `tools/install-deps` installs kyverno).
+
+## License
+
+[Apache License 2.0](LICENSE). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
