@@ -1,4 +1,4 @@
-# A local Jarvis checkout for ci/check-apps and ci/test_examples.py, and its venv.
+# A local Jarvis checkout for tools/app-check, and the venv.
 /.jarvis/
 /.venv/
 __pycache__/
