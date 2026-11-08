@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Every app folder carries a VERSION (<major>.<minor>.<patch>), and a change to an app whose
+version is already tagged (<app>/v<version>) bumps it, so a tag never moves under an env that pins it.
+
+  ci/check-versions [<base ref>]
+
+With a base ref (a pull request's base), an app whose files differ from base must have a
+VERSION whose tag does not exist yet.
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+NOT_APPS = {"ci"}
+SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def _git(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
+
+
+def apps() -> list[Path]:
+    return sorted(path for path in ROOT.iterdir() if path.is_dir() and not path.name.startswith(".") and path.name not in NOT_APPS)
+
+
+def problems(base: str | None) -> list[str]:
+    found = []
+    for app in apps():
+        version_file = app / "VERSION"
+        version = version_file.read_text(encoding="utf-8").strip() if version_file.is_file() else ""
+        if not SEMVER.fullmatch(version):
+            found.append(f"{app.name}/VERSION must hold one <major>.<minor>.<patch> line")
+            continue
+        if base is None:
+            continue
+        changed = _git("diff", "--quiet", f"{base}...HEAD", "--", app.name).returncode != 0
+        tagged = _git("rev-parse", "--verify", "--quiet", f"refs/tags/{app.name}/v{version}").returncode == 0
+        if changed and tagged:
+            found.append(f"{app.name} changed but {app.name}/v{version} is already tagged; bump {app.name}/VERSION")
+    return found
+
+
+def main(argv: list[str]) -> int:
+    found = problems(argv[0] if argv else None)
+    for line in found:
+        print(line, file=sys.stderr)
+    return 1 if found else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

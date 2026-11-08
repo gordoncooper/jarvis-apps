@@ -1,0 +1,39 @@
+name: tag-apps
+
+# On main, each app whose VERSION has no tag yet gets one: <app>/v<VERSION>, on the commit that
+# holds it. An env pins an app to that tag (values/apps.yaml versions in the env repository), so
+# nothing an env runs follows main. ci/check-versions keeps a tagged version from changing.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Tag each new app version
+        run: |
+          set -euo pipefail
+          git config user.name "tag-apps"
+          git config user.email "tag-apps@users.noreply.github.com"
+          python3 ci/check-versions
+          for version_file in */VERSION; do
+            app="${version_file%/VERSION}"
+            [[ "${app}" == ci ]] && continue
+            tag="${app}/v$(tr -d '[:space:]' < "${version_file}")"
+            if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+              continue
+            fi
+            git tag -a "${tag}" -m "${tag}"
+            git push -q origin "refs/tags/${tag}"
+            echo "tagged ${tag}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          done

@@ -27,6 +27,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # ci/check-versions diffs against the base and reads the app tags.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Checkout jarvis at the pinned ref
@@ -52,12 +54,17 @@ jobs:
           export PATH="${PWD}/.venv/bin:${PATH}"
           bash ci/check-apps .jarvis
 
-      - name: Examples equal their copies in jarvis
+      - name: Each app has a VERSION, bumped when a tagged app changes
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          export PATH="${PWD}/.venv/bin:${PATH}"
-          python3 -m pytest -ra ci/test_examples.py -k copy
+          if [[ -n "${BASE_REF}" ]]; then
+            python3 ci/check-versions "origin/${BASE_REF}"
+          else
+            python3 ci/check-versions
+          fi
 
       - name: Example proof against jarvis's renderer, env-schema and admission
         run: |
           export PATH="${PWD}/.venv/bin:${HOME}/.local/bin:${PATH}"
-          python3 -m pytest -ra ci/test_examples.py -k "not copy"
+          python3 -m pytest -ra ci/test_examples.py
