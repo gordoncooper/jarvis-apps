@@ -27,9 +27,9 @@ jobs:
           persist-credentials: false
 
       # Every top-level folder but ci/ against the app rules of the pinned jarvis release
-      # (platform/optional/app-hosting/CONTRACT.md there). Renovate offers each new release.
+      # (core/feature/app-hosting/CONTRACT.md there). Move the pin with each core release.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@c5e5173a9ca895879119af2195e19378c01e6a89 # v0.3.0
+        uses: gordoncooper/jarvis/.github/actions/app-check@c80d4e934344870163946e28b66133822cd6cb0b # v0.4.0
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
