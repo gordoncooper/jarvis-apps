@@ -19,3 +19,5 @@ A small file server (`sigoden/dufs`, pinned by digest) for plain-text notes, sto
 **Not for real data as is:** dufs runs with `--allow-all` and no login, so anyone who can reach the address can read, change or delete every note. Before keeping anything private in it, add dufs's `--auth` with a credential from a Secret.
 
 To keep a volume out of backups instead, declare it `backup: false` and annotate its PVC `backup: none`. The cluster refuses one without the other.
+
+**Releases:** a change here bumps `VERSION`; the merge tags `notes/v<version>`, and each env moves its pin by a Renovate PR.
