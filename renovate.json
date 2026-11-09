@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Pins in this repository: GitHub Actions by commit (core's app-check Action included). Nothing merges on its own.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Core's app-check Action follows core releases: read that release's notes in core's CHANGELOG.md before merging.",
+      "matchDepNames": ["gordoncooper/jarvis"],
+      "groupName": "jarvis core"
+    }
+  ]
+}
