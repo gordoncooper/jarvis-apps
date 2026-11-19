@@ -16,7 +16,7 @@ ci/               # this repository's own checks (not an app)
 ```
 
 - The folder name is the app's name: a lowercase DNS label of at most 59 characters. It must match `metadata.name` in `app.yaml`.
-- The app's namespace is `app-<name>` and its address is `https://<name>.apps.<dns suffix>`. The Ingress host is always `${app_host}`, which the cluster fills in.
+- The app's namespace is `app-<name>` and its address is `https://<name>.apps.<dns suffix>`. Its HTTPRoute names `${app_host}`, which the cluster fills in, on the apps door of core's Gateway (`platform-gateway/jarvis`, `sectionName: apps`).
 - Defaults: 500m CPU and 512Mi memory for the whole app, nothing risky, and a closed network: no web address without `network.web`, no LAN port, no egress beyond DNS (no internet, no LAN, no other app), and no other app may call it.
 - The network section of `app.yaml`:
 
@@ -75,7 +75,7 @@ exceptions:
   - lan-demo: lan-port 8080/TCP
 ```
 
-The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step fails it.
+The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step warns about it.
 
 After you merge here, an env that lists the app keeps running its pinned tag. The change reaches it when the env moves the pin ([Versions](#versions)).
 
