@@ -28,9 +28,8 @@ jobs:
 
       # Every top-level folder but ci/ against the app rules of the pinned jarvis release
       # (core/feature/app-hosting/CONTRACT.md there). Move the pin with each core release.
-      # Until core tags the release with chart apps, the pin is that change's commit on core.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@d71846845b07059754df72edeabb686b60c2ceaa # agent/helm-apps
+        uses: gordoncooper/jarvis/.github/actions/app-check@706809c25562cc1c3c522abb2bf5733aeec16089 # v0.8.0
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
