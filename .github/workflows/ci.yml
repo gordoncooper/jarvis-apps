@@ -28,8 +28,9 @@ jobs:
 
       # Every top-level folder but ci/ against the app rules of the pinned jarvis release
       # (core/feature/app-hosting/CONTRACT.md there). Move the pin with each core release.
+      # Until core tags the release with derived web routes, the pin is that change's commit on core.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@67f920306fda095c859a1697e34fd21cf0721b5e # v0.7.0
+        uses: gordoncooper/jarvis/.github/actions/app-check@d6394887c2121d73d27477ac0b68472a8d06040e # agent/phase-5b-hosted-apps
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
