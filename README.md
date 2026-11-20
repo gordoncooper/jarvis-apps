@@ -9,9 +9,10 @@ The rules an app follows are in Jarvis's `core/feature/app-hosting/CONTRACT.md`,
 ```text
 <name>/
   app.yaml        # the app file: the whole definition of the app (kind App)
-  deploy/         # the app's Kubernetes objects: plain manifests, or a kustomization
+  deploy/         # the app's Kubernetes objects: plain manifests, or a kustomization;
+                  # or none, when app.yaml names an upstream Helm chart (chart:) instead
   VERSION         # <major>.<minor>.<patch>; main tags each new one <name>/v<VERSION>
-  README.md       # optional; nothing outside app.yaml and deploy/ reaches the cluster
+  README.md       # optional; nothing outside app.yaml and deploy/ (or the chart) reaches the cluster
 ci/               # this repository's own checks (not an app)
 ```
 
@@ -39,7 +40,7 @@ ci/               # this repository's own checks (not an app)
       apps: [notes]       # apps this one calls; each must list this one under callers
     callers: [web-ui]     # apps that may call this one
   ```
-- The image and the probes are the app's own concern; the cluster does not check them. This repository's convention is to pin images by digest (`image: <repo>@sha256:...`) and to put probes in the app's own `deploy/` manifests.
+- The image and the probes are the app's own concern; the cluster does not check them. This repository's convention is to pin images by digest (`image: <repo>@sha256:...`) and to put probes in the app's own `deploy/` manifests or chart values.
 
 ## Versions
 
@@ -51,7 +52,7 @@ An env runs an app at a tag, never at `main`: the app's entry in its `values/app
 | --- | --- |
 | [hello-web](hello-web/) | A web app with an init container and ConfigMap config. It calls [notes](notes/) (granted, `egress.apps` + `callers`), is refused calling lan-demo, and has internet egress. No grant. |
 | [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential, seeded by an init container, surviving restarts. Callable by hello-web only. No grant. |
-| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's grant (`lan-port 8080/TCP`) and admitted with it. |
+| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's grant (`lan-port 8080/TCP`) and admitted with it. Its image runs from a generic upstream chart (bjw-s app-template), with no `deploy/`. |
 
 All three run restricted: non-root, capabilities dropped, read-only root filesystem, `hosted-app` priority, probes, and memory request equal to limit.
 
@@ -81,7 +82,7 @@ After you merge here, an env that lists the app keeps running its pinned tag. Th
 
 ## Add an app
 
-1. Make `<name>/` with `app.yaml` and `deploy/`. Start from the example closest to what you need.
+1. Make `<name>/` with `app.yaml` and `deploy/`, or `app.yaml` alone naming a chart. Start from the example closest to what you need.
 2. Run the same check CI runs, from a Jarvis checkout at the release `.github/workflows/ci.yml` uses (the `app-check` Action's ref):
 
    ```sh
