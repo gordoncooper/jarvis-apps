@@ -30,7 +30,7 @@ jobs:
       # (core/feature/app-hosting/CONTRACT.md there). Move the pin with each core release.
       # Until core tags the release with derived web routes, the pin is that change's commit on core.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@d6394887c2121d73d27477ac0b68472a8d06040e # agent/phase-5b-hosted-apps
+        uses: gordoncooper/jarvis/.github/actions/app-check@66ceb36b587937f5c3632f26c315efdb44e73d0a # agent/phase-5b-hosted-apps
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
