@@ -2,7 +2,7 @@
 
 Hosted apps for a Jarvis cluster: one folder per app. Everything here is **untrusted**. A Jarvis env decides which of these apps it runs and what each may do, and the cluster holds every app to that. Nothing in this repository can switch an app on, grant it anything, or reach the cluster's core.
 
-The rules an app follows are in Jarvis's `platform/optional/app-hosting/CONTRACT.md`, and the walkthrough is `docs/add-a-hosted-app.md`. This README is the short version.
+The rules an app follows are in Jarvis's `core/feature/app-hosting/CONTRACT.md`, and the walkthrough is `docs/add-a-hosted-app.md`. This README is the short version.
 
 ## Layout
 
@@ -16,15 +16,19 @@ ci/               # this repository's own checks (not an app)
 ```
 
 - The folder name is the app's name: a lowercase DNS label of at most 59 characters. It must match `metadata.name` in `app.yaml`.
-- The app's namespace is `app-<name>` and its address is `https://<name>.apps.<dns suffix>`. Its HTTPRoute names `${app_host}`, which the cluster fills in, on the apps door of core's Gateway (`platform-gateway/jarvis`, `sectionName: apps`).
+- The app's namespace is `app-<name>`. Each web entry in `app.yaml` (a Service and its port) gets an address, and core makes its HTTPRoute on the apps door: `https://<name>.apps.<dns suffix>` for the entry with no name, `https://<name>-<entry>.apps.<dns suffix>` for a named one. An app ships no route and keeps its chart's Ingress off; the cluster refuses an Ingress. One whose routing a Service and port cannot express marks its entry `ownRoute: true` and ships that entry's HTTPRoute, with hostname `${app_host}`.
 - Defaults: 500m CPU and 512Mi memory for the whole app, nothing risky, and a closed network: no web address without `network.web`, no LAN port, no egress beyond DNS (no internet, no LAN, no other app), and no other app may call it.
 - The network section of `app.yaml`:
 
   ```yaml
   network:
     web:                  # absent = no web address
-      port: 8080          # plain-HTTP container port; served at https://<name>.apps.<dns suffix>
-      healthPath: /       # optional, default /; the uptime check counts any answer but a 5xx
+      - service: web      # a Service in the app's namespace, served at https://<name>.apps.<dns suffix>
+        port: 80          # its port, plain HTTP
+      - name: admin       # https://<name>-admin.apps.<dns suffix>
+        service: admin
+        port: 8080
+        hostnames: [wiki.example.org]   # optional; each needs the env's hostname grant
     ports:                # LAN ports; each needs the env's lan-port line
       - listen: 25565
         target: 25565
@@ -39,15 +43,15 @@ ci/               # this repository's own checks (not an app)
 
 ## Versions
 
-An env runs an app at a tag, never at `main`: it pins `<name>: v<version>` under `versions` in its `values/apps.yaml`, and Flux reads `refs/tags/<name>/v<version>`. Each app's `VERSION` is its version. When a change to an app reaches `main`, `.github/workflows/tag-apps.yml` tags `<name>/v<VERSION>` if that tag is new; Renovate in the env repository then offers the bump. A change to an app whose `VERSION` is already tagged fails CI (`ci/check-versions`): bump `VERSION` in the same PR, so a tag never moves under an env that pins it.
+An env runs an app at a tag, never at `main`: the app's entry in its `values/apps.yaml` pins `version: v<version>`, and Flux reads `refs/tags/<name>/v<version>`. Each app's `VERSION` is its version. When a change to an app reaches `main`, `.github/workflows/tag-apps.yml` tags `<name>/v<VERSION>` if that tag is new; Renovate in the env repository then offers the bump. A change to an app whose `VERSION` is already tagged fails CI (`ci/check-versions`): bump `VERSION` in the same PR, so a tag never moves under an env that pins it.
 
 ## Examples
 
 | App | What it proves |
 | --- | --- |
-| [hello-web](hello-web/) | A web app with an init container and ConfigMap config. It calls [notes](notes/) (granted, `egress.apps` + `callers`), is refused calling lan-demo, and has internet egress. No exception line. |
-| [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential, seeded by an init container, surviving restarts. Callable by hello-web only. No exception line. |
-| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's exception line (`lan-demo: lan-port 8080/TCP`) and admitted with it. |
+| [hello-web](hello-web/) | A web app with an init container and ConfigMap config. It calls [notes](notes/) (granted, `egress.apps` + `callers`), is refused calling lan-demo, and has internet egress. No grant. |
+| [notes](notes/) | One volume with `backup: true`, backed up with the app's own credential, seeded by an init container, surviving restarts. Callable by hello-web only. No grant. |
+| [lan-demo](lan-demo/) | One risky item, a port open to the LAN, and no web address. It is refused without the env's grant (`lan-port 8080/TCP`) and admitted with it. |
 
 All three run restricted: non-root, capabilities dropped, read-only root filesystem, `hosted-app` priority, probes, and memory request equal to limit.
 
@@ -58,24 +62,20 @@ Copy one of these to start a new app.
 Not here. An env runs an app only when **both** of these are true, and both live in the env's own repository:
 
 1. **App hosting is on for the env.** It is an optional Jarvis component and off by default.
-2. **The env lists the app by name** in `envs/<env>/values/switches.yaml`, one line per app:
+2. **The env lists the app** in `envs/<env>/values/apps.yaml`, one entry per app, pinned to a tag:
 
    ```yaml
-   apps:
-     - hello-web
-     - lan-demo
+   hello-web:
+     version: v0.3.0
+   lan-demo:
+     version: v0.1.1
+     grants:
+       - lan-port 8080/TCP
    ```
 
-The env then renders its wiring with Jarvis's `tools/lib/render_switches.py` and commits the result. Listing a name switches an app on and grants it nothing.
+The env then renders its wiring with `jarvis render` and commits the result. Listing an app switches it on and grants it nothing.
 
-If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a LAN port or a LAN target), it also needs a matching exception line in the env's `values/apps.yaml`:
-
-```yaml
-exceptions:
-  - lan-demo: lan-port 8080/TCP
-```
-
-The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a line is refused. A line in this repository grants nothing. An app with a `backup: true` volume also needs its own backup credential registered by the env. Until then that volume is not backed up and the env's verify step warns about it.
+If an app asks for something risky (privileged mode, root, host network, host paths, a custom hostname, a LAN port or a LAN target), it also needs the matching grant under its entry, as `lan-demo` has above. The LAN addresses behind a target name live only in the env's repository, never here. An app that asks without a grant is refused. A grant in this repository grants nothing. An app with a `backup: true` volume is backed up with its own credential, which the env mints while it keeps the app's `backups` on (the default).
 
 After you merge here, an env that lists the app keeps running its pinned tag. The change reaches it when the env moves the pin ([Versions](#versions)).
 
@@ -87,11 +87,12 @@ After you merge here, an env that lists the app keeps running its pinned tag. Th
    ```sh
    git clone https://github.com/gordoncooper/jarvis.git .jarvis
    git -C .jarvis checkout <ref>
-   python3 .jarvis/tools/app-check --repo . --exclude ci
+   make -C .jarvis venv
+   .jarvis/.venv/bin/python -m jarvis.apps.check --repo . --exclude ci
    ```
 
 3. Open a PR. CI runs Jarvis's `app-check` Action at that release over every top-level folder but `ci/`. It fails if any app file is invalid, or if any such folder has no `app.yaml`. Set the new app's `VERSION` (start at `0.1.0`).
-4. Ask the env's owner to list the app and pin it, and to add any exception line or backup credential it needs.
+4. Ask the env's owner to list the app and pin it, and to add any grant it needs.
 
 ## License
 
