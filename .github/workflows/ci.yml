@@ -29,7 +29,7 @@ jobs:
       # Every top-level folder but ci/ against the app rules of the pinned jarvis release
       # (core/feature/app-hosting/CONTRACT.md there). Move the pin with each core release.
       - name: App-file check over every app folder
-        uses: gordoncooper/jarvis/.github/actions/app-check@82705ff2125d549912b72e3f0421bcbf0719ca0b # v0.8.1
+        uses: gordoncooper/jarvis/.github/actions/app-check@fa8d8e88d49de3aee0e8c30629f13e2b35e81913 # v0.8.4
 
       - name: Each app has a VERSION, bumped when a tagged app changes
         env:
